@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPD — Rencana Penggunaan Dana</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">Rp</div>
+    <div>
+      <h1>Rencana Penggunaan Dana</h1>
+      <p id="periodLabel">Periode — </p>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="btnCsv" class="btn ghost">Ekspor CSV</button>
+    <button id="btnPrint" class="btn ghost">Cetak / PDF</button>
+    <button id="btnReset" class="btn ghost danger">Reset</button>
+  </div>
+</header>
+
+<main>
+
+<section class="card" id="secProfile">
+  <div class="card-head">
+    <h2><span class="num">0</span> Profil &amp; Asumsi Dasar</h2>
+    <p>Semua tabel di bawah dihitung otomatis dari angka di sini.</p>
+  </div>
+
+  <div class="form-grid">
+    <label>
+      <span>Nama Bisnis</span>
+      <input type="text" id="fBizName" placeholder="Kedai Kopi Nusantara">
+    </label>
+    <label>
+      <span>Jenis Bisnis</span>
+      <select id="fBizType">
+        <option value="kopi">Kedai Kopi / F&amp;B</option>
+        <option value="pakaian">Toko Pakaian Online</option>
+        <option value="agensi">Agensi Digital</option>
+      </select>
+    </label>
+    <label>
+      <span>Periode RPD</span>
+      <input type="text" id="fPeriod" placeholder="Juli 2026">
+    </label>
+    <label>
+      <span>Target Omzet Harian (Rp)</span>
+      <input type="number" id="fOmzetHarian" min="0" step="10000">
+    </label>
+    <label>
+      <span>Total Anggaran Kas Keluar (Rp)</span>
+      <input type="number" id="fBudget" min="0" step="100000">
+    </label>
+    <label>
+      <span>Saldo Kas Minimum / Buffer (Rp)</span>
+      <input type="number" id="fMinCash" min="0" step="500000">
+    </label>
+    <label>
+      <span>Kas Masuk Rata-rata per Minggu (Rp)</span>
+      <input type="number" id="fCashInWeek" min="0" step="100000">
+    </label>
+    <label>
+      <span>Target Dana Darurat (3 bulan) (Rp)</span>
+      <input type="number" id="fEmergency" min="0" step="1000000">
+    </label>
+    <label>
+      <span>Dana Darurat Saat Ini (Rp)</span>
+      <input type="number" id="fEmergencyNow" min="0" step="1000000">
+    </label>
+  </div>
+
+  <div class="hint-row">
+    <span id="emergencyCalc" class="hint"></span>
+    <button id="btnRecalcEmergency" class="btn tiny">Hitung ulang dari komponen</button>
+  </div>
+</section>
+
+<section class="card" id="secKpi">
+  <div class="kpi-grid" id="kpiGrid"></div>
+</section>
+
+<section class="card" id="secBreakdown">
+  <div class="card-head">
+    <h2><span class="num">1</span> Tabel Breakdown RPD</h2>
+    <p>Kategori, rincian komponen, alokasi nominal, persentase, frekuensi, dan prioritas.</p>
+  </div>
+  <div class="table-wrap">
+    <table id="tblBreakdown">
+      <thead>
+        <tr>
+          <th style="width:150px">Kategori</th>
+          <th>Rincian Komponen</th>
+          <th class="num-col" style="width:160px">Alokasi Nominal (Rp)</th>
+          <th class="num-col" style="width:88px">Persentase</th>
+          <th style="width:170px">Frekuensi</th>
+          <th style="width:130px">Prioritas</th>
+          <th style="width:52px" class="no-print">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyBreakdown"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="2">TOTAL ALOKASI</td>
+          <td class="num-col" id="totalAlloc">—</td>
+          <td class="num-col" id="totalPct">—</td>
+          <td colspan="3" class="no-print"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="no-print">
+    <button id="btnAddRow" class="btn tiny">+ Tambah Komponen</button>
+  </div>
+</section>
+
+<section class="card" id="secSchedule">
+  <div class="card-head">
+    <h2><span class="num">2</span> Jadwal Pencairan Kas (Cash Outflow Schedule)</h2>
+    <p>Pencairan dibagi 4 minggu agar arus kas tetap aman.</p>
+  </div>
+  <div class="chart-wrap">
+    <div id="weekChart" class="chart"></div>
+  </div>
+  <div class="table-wrap">
+    <table id="tblSchedule">
+      <thead>
+        <tr>
+          <th style="width:110px">Minggu</th>
+          <th style="width:150px">Rincian Pencairan</th>
+          <th style="width:90px">Tgl</th>
+          <th class="num-col">Nominal (Rp)</th>
+          <th class="num-col">Total Keluar (Rp)</th>
+          <th class="num-col">Kas Masuk (Rp)</th>
+          <th class="num-col">Selisih (Rp)</th>
+          <th style="width:110px">Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbodySchedule"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3">TOTAL 4 MINGGU</td>
+          <td class="num-col">—</td>
+          <td class="num-col" id="schedOut">—</td>
+          <td class="num-col" id="schedIn">—</td>
+          <td class="num-col" id="schedDelta">—</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div id="schedAlert" class="alert"></div>
+</section>
+
+<section class="card" id="secEmergency">
+  <div class="card-head">
+    <h2><span class="num">3</span> Alokasi Dana Darurat &amp; Mitigasi</h2>
+    <p>Masukkan omzet harian aktual untuk melihat otomatis pemotongan anggaran.</p>
+  </div>
+
+  <div class="sim-grid">
+    <div class="sim-input">
+      <label>
+        <span>Omzet Harian Aktual (Rp)</span>
+        <input type="number" id="fOmzetActual" min="0" step="10000">
+      </label>
+      <div class="level-badge" id="levelBadge">—</div>
+      <p class="level-note" id="levelNote"></p>
+    </div>
+    <div class="sim-result" id="simResult"></div>
+  </div>
+
+  <h3>Matriks Tindakan Otomatis</h3>
+  <div class="table-wrap">
+    <table id="tblMatrix">
+      <thead>
+        <tr>
+          <th style="width:60px">Level</th>
+          <th style="width:170px">Omzet Harian</th>
+          <th style="width:110px">Status</th>
+          <th>Tindakan Otomatis</th>
+          <th class="num-col" style="width:160px">Penghematan (Rp)</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyMatrix"></tbody>
+    </table>
+  </div>
+
+  <h3>Urutan Pemotongan — WAJIB Ikut Dari Atas</h3>
+  <ol class="cut-order">
+    <li><b>Belanja modal / ekspansi</b> — tunda 100%. Nol pendapatan hilang.</li>
+    <li><b>Iklan non-konversi</b> — matikan yang ROAS &lt; 2×, sisakan hanya produk terlaris.</li>
+    <li><b>Jam operasional &amp; scheduling</b> — kurangi jam buka, atur shift fleksibel.</li>
+    <li><b>Logistik &amp; maintenance</b> — tunda servis non-kritis.</li>
+    <li><b>Pembelian bahan baku</b> — turunkan SKU, fokus inventory cepat laku.</li>
+    <li><b>Outsourcing non-core</b> — pull katering ke produksi in-house.</li>
+    <li><b class="danger-text">Gaji — jangan dipotong.</b> Yang boleh: penundaan insentif, pengurangan jam kerja resmi, atau skema bagi hasil.</li>
+  </ol>
+
+  <h3>Pengaturan Dana Darurat</h3>
+  <div class="er-grid">
+    <div class="er-box">
+      <span>Target dana darurat</span>
+      <b id="erTarget">—</b>
+      <small>3 × biaya minimum operasi</small>
+    </div>
+    <div class="er-box">
+      <span>Terkumpul</span>
+      <b id="erNow">—</b>
+      <small id="erGapText">—</small>
+    </div>
+    <div class="er-box">
+      <span>Progres</span>
+      <b id="erPct">—</b>
+      <div class="bar"><i id="erBar" style="width:0%"></i></div>
+    </div>
+    <div class="er-box">
+      <span>Runway saat ini</span>
+      <b id="erRunway">—</b>
+      <small>dana darurat ÷ biaya mingguan</small>
+    </div>
+  </div>
+  <ul class="bullet">
+    <li><b>Hierarki penggunaan:</b> ① tagihan listrik/komunikasi → ② restock bahan minimum → ③ 1 minggu gaji → ④ modal darurat.</li>
+    <li><b>Pemicu:</b> bila saldo kas &lt; Rp 5.000.000 atau level ≥ 3 selama 2 minggu berturut-turut, wajib doing reviewRPD.</li>
+  </ul>
+</section>
+
+<section class="card" id="secKpi2">
+  <div class="card-head">
+    <h2><span class="num">4</span> Guardrail KPI Bulanan</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>KPI</th><th class="num-col" style="width:140px">Target</th><th class="num-col" style="width:140px">Realisasi</th><th style="width:120px">Status</th></tr>
+      </thead>
+      <tbody id="tbodyKpi"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card note-card">
+  <h3>Catatan &amp; Disclaimer</h3>
+  <p class="muted">Dokumen ini adalah alat bantu perencanaan, bukan nasihat keuangan, investasi, atau perpajakan resmi. Verifikasi komponen gaji/BPJS, sewa, status PPh 21, PPN, dan PKP bersama akuntan atau konsultan pajak terdaftar sebelum digunakan sebagai dokumen resmi atau dasar pinjaman.</p>
+  <p class="muted">Data tersimpan otomatis di browser Anda (localStorage) dan tidak dikirim ke server mana pun.</p>
+</section>
+
+</main>
+
+<footer class="foot">
+  <span>RPD Tool v1.0</span>
+  <span id="saveStatus">Tersimpan lokal</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
